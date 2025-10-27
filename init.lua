@@ -4,6 +4,10 @@ vim.g.maplocalleader = ' '
 vim.g.have_nerd_font = true
 
 -- custom
+vim.g.copilot_no_tab_map = true
+vim.g.copilot_no_maps = true
+vim.g.copilot_assume_mapped = true
+
 vim.opt.nu = true
 vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
@@ -156,6 +160,11 @@ require('lazy').setup({
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
+          },
+        },
+        pickers = {
+          find_files = {
+            hidden = true,
           },
         },
       }
@@ -363,7 +372,7 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = { c = true, cpp = true, java = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -517,3 +526,7 @@ require('lazy').setup({
     },
   },
 })
+
+vim.schedule(function()
+  vim.keymap.set('i', '<Esc>', '<C-c>', { noremap = true, silent = true })
+end)

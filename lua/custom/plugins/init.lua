@@ -88,9 +88,6 @@ return {
         },
       }
 
-      -----------------------------------------------------------------
-      -- 🔑 Keymaps for convenience
-      -----------------------------------------------------------------
       local keymap = vim.keymap.set
       local opts = { noremap = true, silent = true, desc = '' }
 
@@ -99,9 +96,6 @@ return {
       keymap('n', '<leader>tv', '<cmd>ToggleTerm direction=vertical size=50<CR>', vim.tbl_extend('force', opts, { desc = 'Vertical terminal' }))
       keymap('n', '<leader>tf', '<cmd>ToggleTerm direction=float<CR>', vim.tbl_extend('force', opts, { desc = 'Floating terminal' }))
 
-      -----------------------------------------------------------------
-      -- 🧠 Terminal mode mappings
-      -----------------------------------------------------------------
       local function set_terminal_keymaps(ev)
         local opts = { buffer = ev.buf }
         vim.keymap.set('t', '<Esc>', [[<C-\><C-n>]], opts)
@@ -130,10 +124,14 @@ return {
           vim.cmd 'startinsert!'
           vim.wo[term.window].number = false
           vim.wo[term.window].relativenumber = false
+          vim.api.nvim_buf_set_keymap(term.bufnr, 't', '<C-g>', '<cmd>close<CR>', { noremap = true, silent = true })
+        end,
+        on_close = function()
+          vim.cmd 'stopinsert'
         end,
       }
 
-      keymap('n', '<leader>tg', function()
+      keymap('n', '<C-g>', function()
         lazygit:toggle()
       end, { desc = 'Toggle Lazygit (floating)' })
     end,
@@ -193,19 +191,7 @@ return {
         end, { desc = 'Jump to previous git [c]hange' })
 
         -- Actions
-        -- visual mode
-        map('v', '<leader>hs', function()
-          gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, { desc = 'git [s]tage hunk' })
-        map('v', '<leader>hr', function()
-          gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, { desc = 'git [r]eset hunk' })
         -- normal mode
-        map('n', '<leader>hs', gitsigns.stage_hunk, { desc = 'git [s]tage hunk' })
-        map('n', '<leader>hr', gitsigns.reset_hunk, { desc = 'git [r]eset hunk' })
-        map('n', '<leader>hS', gitsigns.stage_buffer, { desc = 'git [S]tage buffer' })
-        map('n', '<leader>hu', gitsigns.stage_hunk, { desc = 'git [u]ndo stage hunk' })
-        map('n', '<leader>hR', gitsigns.reset_buffer, { desc = 'git [R]eset buffer' })
         map('n', '<leader>hp', gitsigns.preview_hunk, { desc = 'git [p]review hunk' })
         map('n', '<leader>hb', gitsigns.blame_line, { desc = 'git [b]lame line' })
         map('n', '<leader>hd', gitsigns.diffthis, { desc = 'git [d]iff against index' })
@@ -217,5 +203,152 @@ return {
         map('n', '<leader>tD', gitsigns.preview_hunk_inline, { desc = '[T]oggle git show [D]eleted' })
       end,
     },
+  },
+  -- {
+  --   'nvim-java/nvim-java',
+  --   dependencies = {
+  --     'nvim-java/nvim-java-core', -- core LSP & JDT integration
+  --     'lua-async-await', -- internal async library used by nvim-java
+  --     'mfussenegger/nvim-jdtls', -- the actual LSP client (JDT LS)
+  --     'williamboman/mason.nvim', -- installs jdtls via Mason
+  --     'williamboman/mason-lspconfig.nvim', -- connects mason <-> lspconfig
+  --     'neovim/nvim-lspconfig', -- base LSP framework
+  --   },
+  --   config = function()
+  --     require('java').setup {
+  --       jdk = {
+  --         auto_install = true,
+  --       },
+  --     }
+  --   end,
+  -- },
+  {
+    'zbirenbaum/copilot.lua',
+    cmd = 'Copilot',
+    event = 'InsertEnter',
+    init = function()
+      vim.g.copilot_no_maps = true
+      vim.g.copilot_no_tab_map = true
+      vim.g.copilot_assume_mapped = true
+    end,
+    config = function()
+      require('copilot').setup {
+        suggestion = {
+          enabled = true,
+          auto_trigger = true,
+          debounce = 75,
+          keymap = {
+            accept = '<C-l>',
+            next = '<C-]>',
+            prev = '<C-[>',
+            dismiss = '<C-\\>',
+          },
+          show_predictive_index = false,
+        },
+        panel = { enabled = false },
+      }
+      vim.api.nvim_create_autocmd('InsertEnter', {
+        callback = function()
+          vim.keymap.set('i', '<Esc>', '<Esc>', { noremap = true, silent = true, buffer = true })
+        end,
+      })
+    end,
+  },
+  {
+    'CopilotC-Nvim/CopilotChat.nvim',
+    branch = 'main',
+    event = 'VeryLazy',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'zbirenbaum/copilot.lua',
+    },
+    opts = {
+      model = 'claude-sonnet-4',
+      debug = false,
+      context = 'buffers',
+      window = {
+        layout = 'vertical',
+        position = 'right',
+        width = 0.3,
+      },
+      headers = {
+        user = 'You',
+        assistant = 'Copilot',
+      },
+    },
+
+    config = function()
+      local function set_copilotchat_highlights()
+        vim.api.nvim_set_hl(0, 'CopilotChatResource', { fg = '#F7768E', bold = true })
+        vim.api.nvim_set_hl(0, 'CopilotChatTool', { fg = '#E0AF68', bold = true })
+        vim.api.nvim_set_hl(0, 'CopilotChatPrompt', { fg = '#9ECE6A', bold = true })
+        vim.api.nvim_set_hl(0, 'CopilotChatModel', { fg = '#BB9AF7', italic = true })
+        vim.api.nvim_set_hl(0, 'CopilotChatUri', { fg = '#7dcfff', underline = true })
+      end
+
+      set_copilotchat_highlights()
+
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        callback = set_copilotchat_highlights,
+      })
+    end,
+
+    keys = function()
+      local chat = require 'CopilotChat'
+      return {
+        {
+          '<leader>cc',
+          function()
+            chat.toggle()
+          end,
+          desc = 'Toggle Copilot Chat',
+        },
+        {
+          '<leader>cb',
+          function()
+            chat.open { context = 'buffers' }
+          end,
+          desc = 'Chat: buffers context',
+        },
+        {
+          '<leader>cw',
+          function()
+            chat.open { context = 'workspace' }
+          end,
+          desc = 'Chat: workspace context',
+        },
+        {
+          '<leader>cv',
+          function()
+            chat.open { context = 'selection' }
+          end,
+          mode = 'v',
+          desc = 'Chat: visual selection',
+        },
+        {
+          '<leader>ce',
+          function()
+            chat.ask '/Explain'
+          end,
+          desc = 'Explain code',
+        },
+        {
+          '<leader>cq',
+          function()
+            chat.close()
+          end,
+          desc = 'Close Copilot Chat',
+        },
+        {
+          '<leader>cfb',
+          function()
+            local filepath = vim.fn.expand '%:p'
+            require('CopilotChat').open()
+            require('CopilotChat').ask('#file:' .. filepath)
+          end,
+          desc = 'Chat with current file context',
+        },
+      }
+    end,
   },
 }
